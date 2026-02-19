@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>University Lost & Found</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="logo">Uni Lost &amp; Found</div>
+      <nav class="nav">
+        <a href="#post-section">Post Item</a>
+        <a href="#list-section">View Items</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-text">
+          <h1>Help Lost Items Find Their Way Home</h1>
+          <p>
+            Post lost or found items around campus so they can be returned to their owners quickly.
+          </p>
+        </div>
+      </section>
+
+      <section id="post-section" class="card form-section">
+        <h2>Post Lost / Found Item</h2>
+        <form id="item-form">
+          <div class="form-row">
+            <label>Type</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="type" value="lost" checked />
+                Lost
+              </label>
+              <label>
+                <input type="radio" name="type" value="found" />
+                Found
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="title">Item Title</label>
+            <input
+              id="title"
+              name="title"
+              type="text"
+              placeholder="Eg. Black backpack, iPhone 13, Student ID card"
+              required
+            />
+          </div>
+
+          <div class="form-row">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="Electronics">Electronics</option>
+              <option value="Documents / ID">Documents / ID</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Accessories">Accessories</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+
+          <div class="form-row two-col">
+            <div>
+              <label for="location">Where was it lost/found?</label>
+              <input
+                id="location"
+                name="location"
+                type="text"
+                placeholder="Eg. Library, CSE Block, Cafeteria"
+              />
+            </div>
+            <div>
+              <label for="date">Date</label>
+              <input id="date" name="date" type="date" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="description">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              rows="3"
+              placeholder="Describe color, brand, special marks, etc."
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="contact">Contact Info</label>
+            <input
+              id="contact"
+              name="contact"
+              type="text"
+              placeholder="Email, phone, or room number"
+            />
+          </div>
+
+          <div class="form-row">
+            <label for="photo">Upload Item Image</label>
+            <input id="photo" name="photo" type="file" accept="image/*" />
+            <p class="hint">Optional, but helps people recognize the item.</p>
+          </div>
+
+          <button type="submit" class="btn-primary" id="submit-btn">
+            <span class="btn-text">Post Item</span>
+            <span class="btn-loader" style="display: none;">
+              <span class="spinner"></span>
+              Posting...
+            </span>
+          </button>
+        </form>
+      </section>
+
+      <!-- Toast Notification -->
+      <div id="toast" class="toast" role="alert" aria-live="polite">
+        <span id="toast-message"></span>
+        <button id="toast-close" class="toast-close" aria-label="Close">×</button>
+      </div>
+
+      <section id="list-section" class="list-section">
+        <div class="list-header">
+          <h2>Posted Items</h2>
+          <div class="filters">
+            <label for="filter-type">Filter:</label>
+            <select id="filter-type">
+              <option value="all">All</option>
+              <option value="lost">Lost Only</option>
+              <option value="found">Found Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="items-list" class="items-grid">
+          <!-- Cards will be inserted here by JavaScript -->
+        </div>
+        <div id="loading-state" class="loading-state" style="display: none;">
+          <div class="spinner-large"></div>
+          <p>Loading items...</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>University Lost &amp; Found Platform By ALBATROSS &copy; <span id="year"></span></p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
+</body>
+</html>
