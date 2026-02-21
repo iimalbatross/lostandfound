@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Invertis Lost & Found</title>
+  <title>Invertis Care & Safe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -14,25 +14,33 @@
 </head>
 <body>
   <div class="page">
-    <header class="header">
-      <div class="logo">Uni Lost &amp; Found</div>
-      <nav class="nav">
-        <a href="#post-section">Post Item</a>
-        <a href="#list-section">View Items</a>
-      </nav>
-    </header>
+      <header class="header">
+        <div class="logo">Invertis Care &amp; Safe</div>
+      </header>
+
+      <!-- Platform Navigation Tabs -->
+      <div class="platform-tabs">
+        <button class="platform-tab active" data-platform="lost-found">
+          Lost & Found
+        </button>
+        <button class="platform-tab" data-platform="campus-nav">
+          Issue Reporting
+        </button>
+      </div>
 
     <main>
-      <section class="hero">
-        <div class="hero-text">
-          <h1>Help Lost Items Find Their Way Home</h1>
-          <p>
-            Post lost or found items around campus so they can be returned to their owners quickly.
-          </p>
-        </div>
-      </section>
+      <!-- Lost & Found Platform -->
+      <div id="lost-found-platform" class="platform-content active">
+        <section class="hero">
+          <div class="hero-text">
+            <h1>Help Lost Items Find Their Way Home</h1>
+            <p>
+              Post lost or found items around campus so they can be returned to their owners quickly.
+            </p>
+          </div>
+        </section>
 
-      <section id="post-section" class="card form-section">
+        <section id="post-section" class="card form-section">
         <h2>Post Lost / Found Item</h2>
         <form id="item-form">
           <div class="form-row">
@@ -123,22 +131,27 @@
         </form>
       </section>
 
-      <!-- Toast Notification -->
-      <div id="toast" class="toast" role="alert" aria-live="polite">
-        <span id="toast-message"></span>
-        <button id="toast-close" class="toast-close" aria-label="Close">×</button>
-      </div>
-
-      <section id="list-section" class="list-section">
+        <section id="list-section" class="list-section">
         <div class="list-header">
           <h2>Posted Items</h2>
-          <div class="filters">
-            <label for="filter-type">Filter:</label>
-            <select id="filter-type">
-              <option value="all">All</option>
-              <option value="lost">Lost Only</option>
-              <option value="found">Found Only</option>
-            </select>
+          <div class="search-filters">
+            <div class="search-box">
+              <input 
+                type="date" 
+                id="search-date" 
+                placeholder="Search by date"
+                title="Search by date"
+              />
+              <button id="clear-search" class="btn-clear" style="display: none;" title="Clear search">×</button>
+            </div>
+            <div class="filters">
+              <label for="filter-type">Filter:</label>
+              <select id="filter-type">
+                <option value="all">All</option>
+                <option value="lost">Lost Only</option>
+                <option value="found">Found Only</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -149,12 +162,174 @@
           <div class="spinner-large"></div>
           <p>Loading items...</p>
         </div>
-      </section>
+        </section>
+      </div>
+
+      <!-- Issue Reporting Platform -->
+      <div id="campus-nav-platform" class="platform-content" style="display: none;">
+        <section class="hero">
+          <div class="hero-text">
+            <h1>Issue Reporting</h1>
+            <p>
+              Report issues to keep campus safe and well-maintained.
+            </p>
+          </div>
+        </section>
+
+        <!-- Issue Reporting Section -->
+        <section id="issue-reporting-section" class="card form-section">
+          <form id="issue-form">
+            <h2>Report an Issue</h2>
+            <div class="form-row">
+              <label for="issue-student-id">Student ID <span class="required">*</span></label>
+              <input
+                id="issue-student-id"
+                name="issue-student-id"
+                type="text"
+                placeholder="Eg. BCA2025A12"
+                pattern="[A-Za-z0-9]+"
+                minlength="4"
+                maxlength="20"
+                required
+              />
+              <p class="hint">Only letters and numbers (no spaces). Mandatory for issue reporting.</p>
+            </div>
+            <div class="form-row">
+              <label for="issue-type">Issue Type</label>
+              <select id="issue-type" name="issue-type" required>
+                <option value="">Select issue type...</option>
+                <option value="infrastructure">Infrastructure</option>
+                <option value="safety">Safety & Security</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="cleanliness">Cleanliness</option>
+                <option value="electrical">Electrical</option>
+                <option value="plumbing">Plumbing</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label for="issue-location">Location</label>
+              <input
+                id="issue-location"
+                name="issue-location"
+                type="text"
+                placeholder="Eg. Library - 2nd Floor, CSE Block - Room 205"
+                required
+              />
+            </div>
+
+            <div class="form-row">
+              <label for="issue-description">Description</label>
+              <textarea
+                id="issue-description"
+                name="issue-description"
+                rows="4"
+                placeholder="Describe the issue in detail..."
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-row">
+              <label for="issue-priority">Priority</label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="issue-priority" value="low" />
+                  Low
+                </label>
+                <label>
+                  <input type="radio" name="issue-priority" value="medium" checked />
+                  Medium
+                </label>
+                <label>
+                  <input type="radio" name="issue-priority" value="high" />
+                  High
+                </label>
+                <label>
+                  <input type="radio" name="issue-priority" value="urgent" />
+                  Urgent
+                </label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label for="issue-photo">Upload Photo (Optional)</label>
+              <input id="issue-photo" name="issue-photo" type="file" accept="image/*" />
+              <p class="hint">A photo helps us understand the issue better.</p>
+            </div>
+
+            <div class="form-row">
+              <label for="issue-contact">Your Contact</label>
+              <input
+                id="issue-contact"
+                name="issue-contact"
+                type="text"
+                placeholder="Email or phone number"
+              />
+            </div>
+
+            <button type="submit" class="btn-primary" id="issue-submit-btn">
+              <span class="btn-text">Submit Issue</span>
+              <span class="btn-loader" style="display: none;">
+                <span class="spinner"></span>
+                Submitting...
+              </span>
+            </button>
+          </form>
+        </section>
+
+        <!-- Reported Issues List -->
+        <section id="issues-list-section" class="list-section">
+          <div class="list-header">
+            <h2>Reported Issues</h2>
+            <div class="search-filters">
+              <div class="filters">
+                <label for="filter-issue-type">Filter:</label>
+                <select id="filter-issue-type">
+                  <option value="all">All Issues</option>
+                  <option value="infrastructure">Infrastructure</option>
+                  <option value="safety">Safety & Security</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="cleanliness">Cleanliness</option>
+                  <option value="electrical">Electrical</option>
+                  <option value="plumbing">Plumbing</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="filters">
+                <label for="filter-issue-priority">Priority:</label>
+                <select id="filter-issue-priority">
+                  <option value="all">All Priorities</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="issues-list" class="items-grid">
+            <!-- Issue cards will be inserted here by JavaScript -->
+          </div>
+          <div id="issues-loading-state" class="loading-state" style="display: none;">
+            <div class="spinner-large"></div>
+            <p>Loading issues...</p>
+          </div>
+        </section>
+      </div>
     </main>
 
     <footer class="footer">
-      <p>University Lost &amp; Found Platform By ALBAT &copy; <span id="year"></span></p>
+      <p>Invertis Care &amp; Safe Platform By ALBATROSS &copy; <span id="year"></span></p>
     </footer>
+
+    <!-- Toast Notification (global) -->
+    <div id="toast" class="toast" role="alert" aria-live="polite">
+      <span id="toast-message"></span>
+      <button id="toast-close" class="toast-close" aria-label="Close">×</button>
+    </div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
