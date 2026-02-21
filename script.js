@@ -46,7 +46,17 @@ function isValidStudentId(studentId) {
   return /^[A-Za-z0-9]{4,20}$/.test(String(studentId || "").trim());
 }
 
+function getTodayDateString() {
+  return new Date().toISOString().split("T")[0];
+}
+
 yearSpan.textContent = new Date().getFullYear();
+
+// Restrict date inputs to today or past (no future dates)
+const postDateInput = document.getElementById("date");
+const searchDateInput = document.getElementById("search-date");
+if (postDateInput) postDateInput.setAttribute("max", getTodayDateString());
+if (searchDateInput) searchDateInput.setAttribute("max", getTodayDateString());
 
 // Platform switching
 platformTabs.forEach(tab => {
@@ -167,7 +177,8 @@ async function handleFormSubmit(event) {
       location: location || "",
       date: date || "",
       description: description || "",
-      contact: contact || ""
+      contact: contact || "",
+      status: type === "lost" ? "searching" : "pending"
     };
     
     // Only add image_url if it's not empty
@@ -313,6 +324,39 @@ function renderItems() {
     tag.textContent = item.type === "lost" ? "Lost" : "Found";
     card.appendChild(tag);
 
+    const statusRow = document.createElement("div");
+    statusRow.className = "item-status-row";
+    const statusLabel = document.createElement("span");
+    statusLabel.className = "item-status-label";
+    statusLabel.textContent = "Status: ";
+    statusRow.appendChild(statusLabel);
+    const itemStatus = item.status || (item.type === "lost" ? "searching" : "pending");
+    const statusSelect = document.createElement("select");
+    statusSelect.className = `item-status-select item-status-${itemStatus}`;
+    statusSelect.setAttribute("aria-label", "Update status");
+    if (item.type === "lost") {
+      ["searching", "found"].forEach(val => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = val === "searching" ? "Searching" : "Found";
+        if (itemStatus === val) opt.selected = true;
+        statusSelect.appendChild(opt);
+      });
+    } else {
+      ["pending", "returned"].forEach(val => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = val === "pending" ? "Pending" : "Returned";
+        if (itemStatus === val) opt.selected = true;
+        statusSelect.appendChild(opt);
+      });
+    }
+    statusSelect.addEventListener("change", () => {
+      updateItemStatus(item.id, statusSelect.value);
+    });
+    statusRow.appendChild(statusSelect);
+    card.appendChild(statusRow);
+
     const titleEl = document.createElement("h3");
     titleEl.className = "item-title";
     titleEl.textContent = item.title || "Unnamed item";
@@ -365,6 +409,28 @@ function formatDisplayDate(dateStr) {
     month: "short",
     day: "numeric"
   });
+}
+
+async function updateItemStatus(itemId, newStatus) {
+  try {
+    const { error } = await supabaseClient
+      .from("items")
+      .update({ status: newStatus })
+      .eq("id", itemId);
+
+    if (error) {
+      showToast("Failed to update status: " + error.message, "error");
+      return;
+    }
+    const item = items.find(i => i.id === itemId);
+    if (item) item.status = newStatus;
+    renderItems();
+    const label = newStatus === "found" ? "Found" : newStatus === "returned" ? "Returned" : newStatus === "searching" ? "Searching" : "Pending";
+    showToast("Status updated to " + label, "success");
+  } catch (err) {
+    showToast("Something went wrong.", "error");
+    console.error(err);
+  }
 }
 
 // ---------- Platform Switching Functions ----------
