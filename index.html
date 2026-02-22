@@ -320,16 +320,50 @@
       </div>
     </main>
 
+    <!-- Achievement Section -->
+    <section id="achievement-section" class="achievement-section">
+      <h2 class="achievement-heading">Achievements</h2>
+      <p class="achievement-subtitle"></p>
+      <div class="achievement-grid">
+        <div class="achievement-card">
+          <span class="achievement-icon" aria-hidden="true">🎯</span>
+          <span class="achievement-value" id="achievement-lost-found-count">0</span>
+          <span class="achievement-label">Lost Items Found</span>
+        </div>
+        <div class="achievement-card">
+          <span class="achievement-icon" aria-hidden="true">↩️</span>
+          <span class="achievement-value" id="achievement-found-returned-count">0</span>
+          <span class="achievement-label">Found Items Returned</span>
+        </div>
+        <div class="achievement-card">
+          <span class="achievement-icon" aria-hidden="true">✅</span>
+          <span class="achievement-value" id="achievement-issues-resolved-count">0</span>
+          <span class="achievement-label">Issues Resolved</span>
+        </div>
+        <div class="achievement-card achievement-card-total">
+          <span class="achievement-icon" aria-hidden="true">🙌</span>
+          <span class="achievement-value" id="achievement-total-helped-count">0</span>
+          <span class="achievement-label">Total Helped</span>
+        </div>
+      </div>
+    </section>
+
     <footer class="footer">
       <p>Invertis Care &amp; Safe Platform By ALBATROSS &copy; <span id="year"></span></p>
     </footer>
 
-    <!-- Toast Notification (global) -->
-    <div id="toast" class="toast" role="alert" aria-live="polite">
-      <span id="toast-message"></span>
-      <button id="toast-close" class="toast-close" aria-label="Close">×</button>
-    </div>
+  </div>
 
+  <!-- Toast Notification (global) -->
+  <div id="toast" class="toast" role="alert" aria-live="polite">
+    <span id="toast-message"></span>
+    <button id="toast-close" class="toast-close" aria-label="Close">×</button>
+  </div>
+
+  <!-- Image Lightbox (full-size image on click) - outside .page so it opens on top -->
+  <div id="image-lightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-label="View image" aria-hidden="true">
+    <button id="image-lightbox-close" class="image-lightbox-close" aria-label="Close">×</button>
+    <img id="image-lightbox-img" src="" alt="Full size view" />
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
