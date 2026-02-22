@@ -70,21 +70,14 @@ body {
   width: 100%;
 }
 
-/* Platform Tabs */
+/* Platform Tabs (inside header, right corner) */
 .platform-tabs {
   display: flex;
   gap: 0.5rem;
-  padding: 1rem 6vw;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-soft);
-  position: sticky;
-  top: 57px;
-  z-index: 15;
 }
 
 .platform-tab {
-  padding: 0.7rem 1.5rem;
+  padding: 0.5rem 1rem;
   border: none;
   border-radius: 0.6rem;
   background: rgba(255, 255, 255, 0.75);
@@ -1073,12 +1066,11 @@ textarea {
   }
 
   .platform-tabs {
-    padding: 0.8rem 5vw;
     flex-wrap: wrap;
   }
 
   .platform-tab {
-    padding: 0.6rem 1rem;
+    padding: 0.45rem 0.75rem;
     font-size: 0.85rem;
   }
 }
