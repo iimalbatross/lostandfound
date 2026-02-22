@@ -8,8 +8,10 @@ const STORAGE_BUCKET = "item-images"; // is naam ka bucket Supabase me banao
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Auto-delete posts older than 2 weeks (14 days)
+// Auto-delete: normal posts after 2 weeks; resolved posts (found/returned/resolved) after 1 week
 const POST_EXPIRY_DAYS = 14;
+const RESOLVED_POST_EXPIRY_DAYS = 7;
+const PLATFORM_STATS_ID = "main";
 
 // ---------- UI references ----------
 let items = [];
@@ -41,6 +43,42 @@ const filterIssueType = document.getElementById("filter-issue-type");
 const filterIssuePriority = document.getElementById("filter-issue-priority");
 const issueSubmitBtn = document.getElementById("issue-submit-btn");
 const issuesLoadingState = document.getElementById("issues-loading-state");
+
+const achievementLostFoundEl = document.getElementById("achievement-lost-found-count");
+const achievementFoundReturnedEl = document.getElementById("achievement-found-returned-count");
+const achievementIssuesEl = document.getElementById("achievement-issues-resolved-count");
+const achievementTotalHelpedEl = document.getElementById("achievement-total-helped-count");
+
+const imageLightbox = document.getElementById("image-lightbox");
+const imageLightboxImg = document.getElementById("image-lightbox-img");
+const imageLightboxClose = document.getElementById("image-lightbox-close");
+
+function openImageLightbox(src) {
+  if (!imageLightboxImg || !imageLightbox) return;
+  imageLightboxImg.src = src || "";
+  imageLightbox.classList.add("image-lightbox-open");
+  imageLightbox.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  setTimeout(function() { imageLightboxClose?.focus(); }, 50);
+}
+
+function closeImageLightbox() {
+  if (!imageLightbox) return;
+  imageLightbox.classList.remove("image-lightbox-open");
+  imageLightbox.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+  imageLightboxImg.src = "";
+}
+
+if (imageLightboxClose) imageLightboxClose.addEventListener("click", closeImageLightbox);
+if (imageLightbox) {
+  imageLightbox.addEventListener("click", function(e) {
+    if (e.target === imageLightbox) closeImageLightbox();
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && imageLightbox.classList.contains("image-lightbox-open")) closeImageLightbox();
+  });
+}
 
 function isValidStudentId(studentId) {
   return /^[A-Za-z0-9]{4,20}$/.test(String(studentId || "").trim());
@@ -223,6 +261,13 @@ function isOlderThanTwoWeeks(createdAt) {
   return created < twoWeeksAgo;
 }
 
+function isResolvedOlderThanOneWeek(resolvedAt) {
+  if (!resolvedAt) return false;
+  const resolved = new Date(resolvedAt).getTime();
+  const oneWeekAgo = Date.now() - RESOLVED_POST_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+  return resolved < oneWeekAgo;
+}
+
 async function fetchItems() {
   setItemsLoading(true);
   
@@ -238,11 +283,20 @@ async function fetchItems() {
       showToast("Failed to load items. Please refresh the page.", "error");
     } else {
       const allItems = data || [];
-      const expiredIds = allItems.filter(i => isOlderThanTwoWeeks(i.created_at)).map(i => i.id);
-      if (expiredIds.length > 0) {
-        await supabaseClient.from("items").delete().in("id", expiredIds);
+      const resolvedExpiredIds = allItems.filter(i =>
+        (i.status === "found" || i.status === "returned") &&
+        i.resolved_at &&
+        isResolvedOlderThanOneWeek(i.resolved_at)
+      ).map(i => i.id);
+      if (resolvedExpiredIds.length > 0) {
+        await supabaseClient.from("items").delete().in("id", resolvedExpiredIds);
       }
-      items = allItems.filter(i => !isOlderThanTwoWeeks(i.created_at));
+      const afterResolved = allItems.filter(i => !resolvedExpiredIds.includes(i.id));
+      const normalExpiredIds = afterResolved.filter(i => isOlderThanTwoWeeks(i.created_at)).map(i => i.id);
+      if (normalExpiredIds.length > 0) {
+        await supabaseClient.from("items").delete().in("id", normalExpiredIds);
+      }
+      items = afterResolved.filter(i => !isOlderThanTwoWeeks(i.created_at));
     }
 
     renderItems();
@@ -309,7 +363,12 @@ function renderItems() {
 
     if (item.image_url && item.image_url.trim() !== "") {
       const imageWrapper = document.createElement("div");
-      imageWrapper.className = "item-image-wrapper";
+      imageWrapper.className = "item-image-wrapper item-image-clickable";
+      imageWrapper.setAttribute("role", "button");
+      imageWrapper.setAttribute("tabindex", "0");
+      imageWrapper.setAttribute("aria-label", "View full size image");
+      imageWrapper.addEventListener("click", () => openImageLightbox(item.image_url));
+      imageWrapper.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImageLightbox(item.image_url); } });
 
       const img = document.createElement("img");
       img.src = item.image_url;
@@ -413,9 +472,13 @@ function formatDisplayDate(dateStr) {
 
 async function updateItemStatus(itemId, newStatus) {
   try {
+    const updatePayload = { status: newStatus };
+    if (newStatus === "found" || newStatus === "returned") {
+      updatePayload.resolved_at = new Date().toISOString();
+    }
     const { error } = await supabaseClient
       .from("items")
-      .update({ status: newStatus })
+      .update(updatePayload)
       .eq("id", itemId);
 
     if (error) {
@@ -423,7 +486,12 @@ async function updateItemStatus(itemId, newStatus) {
       return;
     }
     const item = items.find(i => i.id === itemId);
-    if (item) item.status = newStatus;
+    if (item) {
+      item.status = newStatus;
+      if (updatePayload.resolved_at) item.resolved_at = updatePayload.resolved_at;
+    }
+    if (newStatus === "found") await incrementLostFoundHelped();
+    if (newStatus === "returned") await incrementFoundReturned();
     renderItems();
     const label = newStatus === "found" ? "Found" : newStatus === "returned" ? "Returned" : newStatus === "searching" ? "Searching" : "Pending";
     showToast("Status updated to " + label, "success");
@@ -575,11 +643,20 @@ async function fetchIssues() {
       showToast("Failed to load issues. Please refresh the page.", "error");
     } else {
       const allIssues = data || [];
-      const expiredIds = allIssues.filter(i => isOlderThanTwoWeeks(i.created_at)).map(i => i.id);
-      if (expiredIds.length > 0) {
-        await supabaseClient.from("issues").delete().in("id", expiredIds);
+      const resolvedExpiredIds = allIssues.filter(i =>
+        i.status === "resolved" &&
+        i.resolved_at &&
+        isResolvedOlderThanOneWeek(i.resolved_at)
+      ).map(i => i.id);
+      if (resolvedExpiredIds.length > 0) {
+        await supabaseClient.from("issues").delete().in("id", resolvedExpiredIds);
       }
-      issues = allIssues.filter(i => !isOlderThanTwoWeeks(i.created_at));
+      const afterResolved = allIssues.filter(i => !resolvedExpiredIds.includes(i.id));
+      const normalExpiredIds = afterResolved.filter(i => isOlderThanTwoWeeks(i.created_at)).map(i => i.id);
+      if (normalExpiredIds.length > 0) {
+        await supabaseClient.from("issues").delete().in("id", normalExpiredIds);
+      }
+      issues = afterResolved.filter(i => !isOlderThanTwoWeeks(i.created_at));
     }
 
     renderIssues();
@@ -624,7 +701,12 @@ function renderIssues() {
 
     if (issue.image_url && issue.image_url.trim() !== "") {
       const imageWrapper = document.createElement("div");
-      imageWrapper.className = "item-image-wrapper";
+      imageWrapper.className = "item-image-wrapper item-image-clickable";
+      imageWrapper.setAttribute("role", "button");
+      imageWrapper.setAttribute("tabindex", "0");
+      imageWrapper.setAttribute("aria-label", "View full size image");
+      imageWrapper.addEventListener("click", () => openImageLightbox(issue.image_url));
+      imageWrapper.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImageLightbox(issue.image_url); } });
       const img = document.createElement("img");
       img.src = issue.image_url;
       img.alt = issue.description || "Issue image";
@@ -696,9 +778,13 @@ function renderIssues() {
 
 async function updateIssueStatus(issueId, newStatus) {
   try {
+    const updatePayload = { status: newStatus };
+    if (newStatus === "resolved") {
+      updatePayload.resolved_at = new Date().toISOString();
+    }
     const { error } = await supabaseClient
       .from("issues")
-      .update({ status: newStatus })
+      .update(updatePayload)
       .eq("id", issueId);
 
     if (error) {
@@ -706,7 +792,13 @@ async function updateIssueStatus(issueId, newStatus) {
       return;
     }
     const issue = issues.find(i => i.id === issueId);
-    if (issue) issue.status = newStatus;
+    if (issue) {
+      issue.status = newStatus;
+      if (updatePayload.resolved_at) issue.resolved_at = updatePayload.resolved_at;
+    }
+    if (newStatus === "resolved") {
+      await incrementIssuesResolved();
+    }
     renderIssues();
     showToast("Status updated to " + (newStatus === "resolved" ? "Resolved" : newStatus === "in-progress" ? "In progress" : "Pending"), "success");
   } catch (err) {
@@ -715,5 +807,100 @@ async function updateIssueStatus(issueId, newStatus) {
   }
 }
 
+// ---------- Achievement / Platform Stats ----------
+async function fetchPlatformStats() {
+  try {
+    const { data, error } = await supabaseClient
+      .from("platform_stats")
+      .select("lost_found_count, issues_resolved_count")
+      .eq("id", PLATFORM_STATS_ID)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Could not load achievement stats:", error.message);
+      return;
+    }
+    const lostFound = data?.lost_found_count ?? 0;
+    const issuesResolved = data?.issues_resolved_count ?? 0;
+    const totalHelped = Number(lostFound) + Number(issuesResolved);
+
+    if (achievementLostFoundEl) achievementLostFoundEl.textContent = lostFound;
+    if (achievementIssuesEl) achievementIssuesEl.textContent = issuesResolved;
+    if (achievementTotalHelpedEl) achievementTotalHelpedEl.textContent = totalHelped;
+  } catch (err) {
+    console.warn("fetchPlatformStats:", err);
+  }
+}
+
+async function incrementLostFoundHelped() {
+  try {
+    const { data: row } = await supabaseClient
+      .from("platform_stats")
+      .select("lost_found_count")
+      .eq("id", PLATFORM_STATS_ID)
+      .maybeSingle();
+
+    const current = Number(row?.lost_found_count ?? 0);
+    const { error } = await supabaseClient
+      .from("platform_stats")
+      .update({
+        lost_found_count: current + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", PLATFORM_STATS_ID);
+
+    if (!error) await fetchPlatformStats();
+  } catch (err) {
+    console.warn("incrementLostFoundHelped:", err);
+  }
+}
+
+async function incrementFoundReturned() {
+  try {
+    const { data: row } = await supabaseClient
+      .from("platform_stats")
+      .select("found_returned_count")
+      .eq("id", PLATFORM_STATS_ID)
+      .maybeSingle();
+
+    const current = Number(row?.found_returned_count ?? 0);
+    const { error } = await supabaseClient
+      .from("platform_stats")
+      .update({
+        found_returned_count: current + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", PLATFORM_STATS_ID);
+
+    if (!error) await fetchPlatformStats();
+  } catch (err) {
+    console.warn("incrementFoundReturned:", err);
+  }
+}
+
+async function incrementIssuesResolved() {
+  try {
+    const { data: row } = await supabaseClient
+      .from("platform_stats")
+      .select("issues_resolved_count")
+      .eq("id", PLATFORM_STATS_ID)
+      .maybeSingle();
+
+    const current = Number(row?.issues_resolved_count ?? 0);
+    const { error } = await supabaseClient
+      .from("platform_stats")
+      .update({
+        issues_resolved_count: current + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", PLATFORM_STATS_ID);
+
+    if (!error) await fetchPlatformStats();
+  } catch (err) {
+    console.warn("incrementIssuesResolved:", err);
+  }
+}
+
 // Page load par DB se data lao
 fetchItems();
+fetchPlatformStats();
